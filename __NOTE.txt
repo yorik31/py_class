@@ -1,0 +1,11 @@
+
+15-Mars 2017 :
+
+Revoie metadata_extraction, correction, versonning, export sur hubic.
+
+
+22-Feverier 2017 :
+
+Tester le script avec la nouvelle class LandsatMTL
+
+C:\DEV\LIB\py_class\test\MetadataExtraction.py
