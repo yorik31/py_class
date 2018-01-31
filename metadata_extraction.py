@@ -37,6 +37,7 @@ description = __component_name__ + " version:" + __version__ + " (" + __status__
 #            - Modification get_in_band_solar_irrandiance_value in order to Account
 #              for Sensor = 'MSS' and not necessary 'MSS_X'
 # 13/12/2017 - Add Sentinel 2 Class.
+# 31/01/2018 - Review update Image List follow commit to git server.
 
 
 class LandsatMTL:
@@ -45,7 +46,7 @@ class LandsatMTL:
    def __init__(self, product_path):
         self.isValid = True
         print ' '
-        log.info('Landsat MTL Class    : \n')
+        log.infog('- Landsat MTL Class     ')
         log.info('- Product : ')
         log.info('            '+str(product_path))
         self.product_path = product_path
@@ -78,7 +79,7 @@ class LandsatMTL:
                 self.landsat_scene_id = (((res)[0].split('='))[1].replace('"', '')).replace(' ', '')
             else:
                 self.landsat_scene_id = ((os.path.basename(mtl_file_name).split('_'))[0]).replace(' ', '')
-            print ' -- Landsat_id : ' + self.landsat_scene_id + ' \n'
+            log.ingo( ' -- Landsat_id : ' + self.landsat_scene_id + ' \n')
             string_to_search = 'FILE_DATE =.*'
             self.file_date = reg_exp(mtl_text, string_to_search)
             string_to_search = 'PROCESSING_SOFTWARE_VERSION =.*'
@@ -118,7 +119,7 @@ class LandsatMTL:
             self.observation_date = reg_exp(mtl_text, string_to_search)
             string_to_search = 'SCENE_CENTER_TIME =.*'
             self.scene_center_time = reg_exp(mtl_text, string_to_search)
-
+# SET GEOGRAPHIC INFORMATION :
             self.scene_boundary_lat = []
             string_to_search = 'CORNER_UL_LAT_PRODUCT =.*'
             self.scene_boundary_lat.append(reg_exp(mtl_text, string_to_search))
@@ -128,8 +129,6 @@ class LandsatMTL:
             self.scene_boundary_lat.append(reg_exp(mtl_text, string_to_search))
             string_to_search = 'CORNER_LL_LAT_PRODUCT =.*'
             self.scene_boundary_lat.append(reg_exp(mtl_text, string_to_search))
-
- 			
             self.scene_boundary_lon = []
             string_to_search = 'CORNER_UL_LON_PRODUCT =.*'
             self.scene_boundary_lon.append(reg_exp(mtl_text, string_to_search))
@@ -139,7 +138,7 @@ class LandsatMTL:
             self.scene_boundary_lon.append(reg_exp(mtl_text, string_to_search))
             string_to_search = 'CORNER_LL_LON_PRODUCT =.*'
             self.scene_boundary_lon.append(reg_exp(mtl_text, string_to_search))
-#INFORMATION ON GROUND CONTROL POINTS
+#INFORMATION ON GROUND CONTROL POINTS :
             string_to_search = 'GROUND_CONTROL_POINT_FILE_NAME =.*'
             self.gcp_filename = reg_exp(mtl_text, string_to_search)
 
@@ -147,7 +146,7 @@ class LandsatMTL:
                 if self.data_type == "L1T":
                     print "GCP : ",self.gcp_filename
                     if self.gcp_filename != 'NotApplicable-geometricrefinementusingneighbouringscenes' :
-			            self.model_fit =  "L1T_SINGLESCENE_OPTIMAL"
+                        self.model_fit =  "L1T_SINGLESCENE_OPTIMAL"
                     else :
                         self.model_fit =  "L1T_MULTISCENE_SUBOPTIMAL"
             string_to_search = 'GROUND_CONTROL_POINTS_MODEL =.*'
@@ -172,7 +171,7 @@ class LandsatMTL:
             string_to_search = 'GROUND_CONTROL_POINT_RESIDUALS_KURTOSIS_Y =.*'
             self.gcp_res_kurt_y = reg_exp(mtl_text, string_to_search)
 			
-#QA INFORMATION
+#QA INFORMATION :
             if (
                     (self.mission == 'LANDSAT_1') or
                     (self.mission == 'LANDSAT_2') or
@@ -238,7 +237,7 @@ class LandsatMTL:
 
 			
 			
-#INFORMATION ON FILE NAMES
+#INFORMATION ON FILE NAMES :
             string_to_search = 'METADATA_FILE_NAME =.*'
             self.md_filename = reg_exp(mtl_text, string_to_search)
             string_to_search = 'CPF_NAME =.*'
@@ -306,9 +305,9 @@ class LandsatMTL:
             self.sun_earth_distance = compute_earth_solar_distance(self.doy)
             self.solar_irradiance = get_in_band_solar_irrandiance_value(self.mission, self.sensor)
             self.radiance_to_reflectance_coefficient = self.compute_radiance_to_reflectance_coefficient()
-		   #  BQA List
+            #  BQA List :
             [self.bqa,self.bqa_filename] = self.get_qa_band()
-           #  Image list
+            #  Set Image list :
             self.dn_image_list = self.set_image_file_name('DN')
             self.radiance_image_list = self.set_image_file_name('RAD')
             self.rhotoa_image_list = self.set_image_file_name('RHO')
@@ -332,7 +331,7 @@ class LandsatMTL:
 
    def display_mtl_info(self):
       print " "
-      print "Product Metadata : \n"
+      log.info( " - Product Metadata : " )
       print " -- Mission : " + self.mission
       print " -- Sensor : " + self.sensor
       print " -- Data Type : " + self.data_type
@@ -380,46 +379,45 @@ class LandsatMTL:
       image_list = []
 
       if opt == 'DN':
-        print ' -- DN configuration'
+        log.info( ' -- DN configuration')
 #        regex1 = os.path.join(product_path, 'L[O,M,T,C][1-8]*[0-9]_B?.TIF')
 #        regex2 = os.path.join(product_path, 'L[O,M,T,C][1-8]*[0-9]_B?[0-3].TIF')
 #        regex3 = os.path.join(product_path, 'L[O,M,T,C][1-8]*[0-9]_B?.TIFF')
-		# Premier regex4 : [0-9,T] ne fonctionne pas
-        #regex4 = os.path.join(product_path, 'L[O,M,T,C][0][1-8].*[_,_MTI_]B?.TIF')
-        regex4 = 'L[O,M,T,C]0[1-8].*?_(RT|LT)(_MTI)?_B\d{1,2}.TIF'
+        regex4 = 'L[O,M,T,C]0[1-8].*?_(RT|LT)(_MTI)?_B\d{1,2}.TIF(F)?'
         p = r.compile(regex4)
         image_list_g = glob.glob(regex4)
         first_list = glob.glob((os.path.join(product_path,'*.TIF')))
         image_list_g = [rec for rec in first_list if p.match(os.path.basename(rec)) ]		
-#        for rec in first_list :
-#            print (os.path.basename(rec))
-#            print p.match(os.path.basename(rec))
 
-#        print [p.search(rec) for rec in first_list]
-#        regex4 = os.path.join(product_path, 'L[O,M,T,C][0][1-8]*[_,_MTI_]B?.TIF')
-          
 #        image_list_g = glob.glob(regex1) + glob.glob(regex2)  + glob.glob(regex3) + glob.glob(regex4)
 #        image_list_g = glob.glob(regex4)
         if (len(image_list_g) == 0) :
             print product_path
             print "%%%%% [WARNING] - No Level 1 DN image file found "
             print "%%%%% [WARNING] - Check function  [set_image_file_name]"
+
+        reg = 'L1TP'
+        p = r.compile(reg)
+        filename = image_list_g[0]
+        u = p.search(filename)
+        if u:
+            # LT05_L1TP_198030_20111011_20161005_01_T1_B1.TIF
+            # LC08_L1TP_199030_20170527_20170527_01_RT_B1.TIF
+            # Exemple 3 : LM51990301985107ESA00_B1.TIF
+            print 'usgs collection product'
+        else:
+            print "no USGS collection"
+
         array = []
         for rec in image_list_g:
             filename = os.path.basename(rec)
-
-            if (((filename.split('_')[1]).split('.')[0]).replace('B', '')) == 'L1TP' :
-                # LT05_L1TP_198030_20111011_20161005_01_T1_B1.TIF
-                # LC08_L1TP_199030_20170527_20170527_01_RT_B1.TIF
-                print 'usgs collection product'
-                band_id = int(((filename.split('B')[1]).split('.')[0]).replace('B', ''))
-                rad = (filename.split('_B')[0])
-            else :
-                 #LM51990301985107ESA00_B1.TIF
-                 band_id = int(((filename.split('_')[1]).split('.')[0]).replace('B', ''))
-                 rad = filename.split('_')[0]
-
-            print 'Radical ',rad
+            #REGEXP to select the band number
+            reg = 'B\d{1,2}'
+            p = r.compile(reg)
+            u = p.search(filename)
+            band_id = int(u.group(0).replace('B', ''))
+            rad = filename
+            #print 'Radical ',rad
             array.append([band_id, rec])
 
         array_sort = sorted(array, key=lambda x: x[0])
@@ -428,62 +426,52 @@ class LandsatMTL:
 
       if opt == 'RAD':
         dn_image = self.dn_image_list
-        print ' -- RADIANCE configuration'
+        log.info( ' -- RADIANCE configuration')
         image_list = []
         for rec in dn_image:
             filename = os.path.basename(rec)
-            if (((filename.split('_')[1]).split('.')[0]).replace('B', '')) == 'L1TP' :
-                # LT05_L1TP_198030_20111011_20161005_01_T1_B1.TIF
-                print 'usgs collection product'
-                band_id = int(((filename.split('B')[1]).split('.')[0]).replace('B', ''))
-                rad = (filename.split('_B')[0])
-            else :
-                 #LM51990301985107ESA00_B1.TIF
-                 band_id = int(((filename.split('_')[1]).split('.')[0]).replace('B', ''))
-                 rad = filename.split('_')[0]
-
-            print os.path.join(product_path, ''.join([rad, '_RAD_', str(band_id)]))
+            #REGEXP to select the band number
+            reg = 'B\d{1,2}'
+            p = r.compile(reg)
+            u = p.search(filename)
+            band_id = int(u.group(0).replace('B', ''))
+            rad = (filename.split('_B')[0])
+#            print os.path.join(product_path, ''.join([rad, '_RAD_', str(band_id)]))
             image_list.append(os.path.join(product_path, ''.join([rad, '_RAD_B', str(band_id),'.TIF'])))
 
       if opt == 'RHO':
-        print ' -- TOA REFLECTANCE configuration'
         dn_image = self.dn_image_list
+        log.info( ' -- TOA REFLECTANCE configuration')
+        image_list = []
+#Check presence of RHO TOA Products
         regex = os.path.join(product_path, 'L[O,M,T,C][0][1-8]*RHO*.TIF') #RHO TOA Products
         image_list = glob.glob(regex)
         if (len(image_list) == 0) :
-            print "%%%%% [WARNING] - No R TOA file found "
+            log.warn( "%%%%% [WARNING] - No R TOA file found ")
         else:
-            print "%%%%% RHO TOA Reflectance files found : set "
+            log.info( "%%%%% RHO TOA Reflectance files found ")
 
-
-        image_list = []
-
+#Add list of TOA
+        label = '_RHO_B'
         for rec in dn_image:
             filename = os.path.basename(rec)
-            product_path = os.path.dirname(rec)
-            if (((filename.split('_')[1]).split('.')[0]).replace('B', '')) == 'L1TP' :
-                # LT05_L1TP_198030_20111011_20161005_01_T1_B1.TIF
-                print 'usgs collection product'
-                band_id = int(((filename.split('B')[1]).split('.')[0]).replace('B', ''))
-                rad = (filename.split('_B')[0])
-            else :
-                 #LM51990301985107ESA00_B1.TIF
-                 band_id = int(((filename.split('_')[1]).split('.')[0]).replace('B', ''))
-                 rad = filename.split('_')[0]
-
-            image_list.append(os.path.join(self.product_path, ''.join([rad, '_RHO_B', str(band_id),'.TIF'])))
+            #REGEXP to select the band number
+            reg = 'B\d{1,2}'
+            p = r.compile(reg)
+            u = p.search(filename)
+            band_id = int(u.group(0).replace('B', ''))
+            rad = (filename.split('_B')[0])
+            image_list.append(os.path.join(self.product_path, ''.join([rad, label, str(band_id),'.TIF'])))
 
       if opt == 'surf':
         # Assume no additional transformation needed
-        print ' -- SURFACE REFLECTANCE configuration'
+        log.info( ' -- SURFACE REFLECTANCE configuration')
         regex = os.path.join(product_path, 'L[O,M,T,C][0][1-8]*_sr_band?.tif') #SR Products
         image_list = glob.glob(regex)
         if (len(image_list) == 0) :
-            print product_path
-            print "%%%%% [WARNING] - No SR file found [set_image_file_name]"
+            log.warn( "%%%%% [WARNING] - No SR file found [set_image_file_name]")
         else:
-            print "%%%%% !!!!!!!!! - Surface Reflectance file found, [self.surf_image_list] is set"
-
+            log.info( "%%%%% !!!!!!!!! - Surface Reflectance file found, [self.surf_image_list] is set")
 
       return image_list
 
@@ -491,29 +479,32 @@ class LandsatMTL:
    def update_image_file_list(self):
     # Force to re order list - glob glob does not order according to band id
     # Process Radiance List
+    print ' '
+    log.infog(' -- Update Image File list : ')
     radiance_image_list = [rec for rec in glob.glob(os.path.join(self.product_path, '*RAD*'))]
     array = []
     image_list = []
-    print 'radiance list'
-
+    print '   For Image files in RADIANCE'
+    #Define regexp to find the band_id
+    reg = 'B\d{1,2}'  	
     for rec in radiance_image_list:
-        print rec
         filename = os.path.basename(rec)
-        rad = filename.split('_')[0]
-        band_id = int(((filename.split('_')[2]).split('.')[0]).replace('B', ''))
+        p = r.compile(reg)
+        u = p.search(filename)
+        band_id = int(u.group(0).replace('B',''))   		
+#        band_id = int(((filename.split('_')[2]).split('.')[0]).replace('B', ''))
         array.append([band_id, rec])
     array_sort = sorted(array, key=lambda x: x[0])
-    print ' '
     for rec in array_sort:
-        print rec
         image_list.append(rec[1])
-
+    print '               '+str(len(image_list))+' Image files in the list'
     self.radiance_image_list = image_list
 
     # Process Reflectance List
     rhotoa_image_list = [rec for rec in glob.glob(os.path.join(self.product_path, '*RHO*TIF'))]
     array = []
     image_list = []
+    print '   For Image files in RHO TOA'
     for rec in rhotoa_image_list:
         filename = os.path.basename(rec)
         rad = filename.split('_')[0]
@@ -522,6 +513,7 @@ class LandsatMTL:
     array_sort = sorted(array, key=lambda x: x[0])
     for rec in array_sort:
         image_list.append(rec[1])
+    print '               '+str(len(image_list))+' Image files in the list'
 
     self.rhotoa_image_list = image_list
 
@@ -1071,43 +1063,6 @@ class Sentinel2MTL:
                 print "%%%%% !!!!!!!!! - Surface Reflectance file found, [self.surf_image_list] is set"
 
         return image_list
-
-    def update_image_file_list(self):
-        # Force to re order list - glob glob does not order according to band id
-        # Process Radiance List
-        radiance_image_list = [rec for rec in glob.glob(os.path.join(self.product_path, '*RAD*'))]
-        array = []
-        image_list = []
-        print 'radiance list'
-
-        for rec in radiance_image_list:
-            print rec
-            filename = os.path.basename(rec)
-            rad = filename.split('_')[0]
-            band_id = int(((filename.split('_')[2]).split('.')[0]).replace('B', ''))
-            array.append([band_id, rec])
-        array_sort = sorted(array, key=lambda x: x[0])
-        print ' '
-        for rec in array_sort:
-            print rec
-            image_list.append(rec[1])
-
-        self.radiance_image_list = image_list
-
-        # Process Reflectance List
-        rhotoa_image_list = [rec for rec in glob.glob(os.path.join(self.product_path, '*RHO*TIF'))]
-        array = []
-        image_list = []
-        for rec in rhotoa_image_list:
-            filename = os.path.basename(rec)
-            rad = filename.split('_')[0]
-            band_id = int(((filename.split('_')[2]).split('.')[0]).replace('B', ''))
-            array.append([band_id, rec])
-        array_sort = sorted(array, key=lambda x: x[0])
-        for rec in array_sort:
-            image_list.append(rec[1])
-
-        self.rhotoa_image_list = image_list
 
     def display_image_file_info(self):
         for image in self.dn_image_list:
